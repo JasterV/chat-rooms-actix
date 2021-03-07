@@ -20,6 +20,13 @@ impl ChatServer {
         }
     }
 
+    fn is_empty(&self, room_id: &Uuid) -> bool {
+        self.rooms
+            .get(&room_id)
+            .map(|sessions| sessions.is_empty())
+            .unwrap_or(false)
+    }
+
     pub fn send_message(&self, room: &Uuid, message: &str, skip_id: &Uuid) {
         self.rooms.get(room).map(|sessions| {
             sessions.iter().for_each(|id| {
@@ -43,6 +50,9 @@ impl ChatServer {
         // send message to other users
         for room in rooms {
             self.send_message(&room, "Someone disconnected", &session_id);
+            if self.is_empty(&room) {
+                self.rooms.remove(&room);
+            }
         }
     }
 }
@@ -52,12 +62,11 @@ impl Actor for ChatServer {
 }
 
 impl Handler<Connect> for ChatServer {
-    type Result = MessageResult<Connect>;
-
+    type Result = ();
+    
     fn handle(&mut self, msg: Connect, _ctx: &mut Self::Context) -> Self::Result {
-        let session_id = Uuid::new_v4();
-        self.sessions.insert(session_id, msg.addr);
-        MessageResult(session_id)
+        let Connect { id, addr } = msg;
+        self.sessions.insert(id, addr);
     }
 }
 
@@ -69,9 +78,7 @@ impl Handler<Disconnect> for ChatServer {
         Disconnect { session }: Disconnect,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        for (_id, sessions) in self.rooms.iter_mut() {
-            sessions.remove(&session);
-        }
+        self.leave_rooms(&session);
         let _ = self.sessions.remove(&session);
     }
 }

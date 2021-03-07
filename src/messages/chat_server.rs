@@ -24,8 +24,9 @@ pub struct JoinRoom {
 }
 
 #[derive(ActixMessage)]
-#[rtype(result = "Uuid")]
+#[rtype(result = "()")]
 pub struct Connect {
+    pub id: SessionId,
     pub addr: Recipient<Message>,
 }
 

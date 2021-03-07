@@ -20,7 +20,7 @@ use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct WsChatSession {
-    pub id: Option<SessionId>,
+    pub id: SessionId,
     pub room: Option<RoomId>,
     pub addr: Addr<ChatServer>,
 }
@@ -28,7 +28,7 @@ pub struct WsChatSession {
 impl WsChatSession {
     pub fn new(addr: Addr<ChatServer>) -> Self {
         WsChatSession {
-            id: None,
+            id: Uuid::new_v4(),
             room: None,
             addr,
         }
@@ -49,7 +49,7 @@ impl WsChatSession {
         match cmd {
             Command::Msg(msg) => {
                 self.addr.do_send(ClientMessage {
-                    session: self.id.clone().unwrap(),
+                    session: self.id.clone(),
                     room: self.room.clone().unwrap(),
                     msg,
                 });
@@ -60,7 +60,7 @@ impl WsChatSession {
     fn create(&self, ctx: &mut WebsocketContext<Self>) {
         self.addr
             .send(CreateRoom {
-                session: self.id.clone().unwrap(),
+                session: self.id.clone(),
             })
             .into_actor(self)
             .then(|res, act, ctx| {
@@ -89,7 +89,7 @@ impl WsChatSession {
                 self.addr
                     .send(JoinRoom {
                         room: uuid,
-                        session: self.id.clone().unwrap(),
+                        session: self.id.clone(),
                     })
                     .into_actor(self)
                     .then(move |res, act, ctx| {
@@ -129,7 +129,7 @@ impl WsChatSession {
     fn leave(&self, ctx: &mut WebsocketContext<Self>) {
         self.addr
             .send(Leave {
-                session: self.id.clone().unwrap(),
+                session: self.id.clone(),
             })
             .into_actor(self)
             .then(move |res, act, ctx| {
@@ -160,17 +160,14 @@ impl Actor for WsChatSession {
         let addr = ctx.address();
         self.addr
             .send(Connect {
+                id: self.id.clone(),
                 addr: addr.recipient(),
             })
             .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Ok(res) => act.id = Some(res),
-                    // something is wrong with chat server
-                    Err(err) => {
-                        ctx.text(WsMessage::err(err.to_string()));
-                        ctx.stop();
-                    }
+            .then(|res, _act, ctx| {
+                if let Err(err) = res {
+                    ctx.text(WsMessage::err(err.to_string()));
+                    ctx.stop();
                 }
                 fut::ready(())
             })
@@ -179,9 +176,9 @@ impl Actor for WsChatSession {
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
         // notify chat server
-        if let Some(id) = self.id {
-            self.addr.do_send(Disconnect { session: id });
-        }
+        self.addr.do_send(Disconnect {
+            session: self.id.clone(),
+        });
         Running::Stop
     }
 }
