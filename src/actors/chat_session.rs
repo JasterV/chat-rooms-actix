@@ -1,15 +1,24 @@
+use std::str::FromStr;
+
 use crate::{
     actors::chat_server::ChatServer,
-    models::messages::chat_server::{Connect, Disconnect, Message},
+    commands::Command,
+    messages::{
+        chat_server::{ClientMessage, Connect, Disconnect, JoinRoom},
+        chat_session::Message,
+    },
 };
-use actix::*;
+use actix::{
+    fut, ActorContext, ActorFuture, ContextFutureSpawner, Handler, Running, StreamHandler,
+    WrapFuture,
+};
 use actix::{Actor, Addr, AsyncContext};
 use actix_web_actors::ws::{self, WebsocketContext};
 use uuid::Uuid;
 
 pub struct WsChatSession {
     pub id: Option<Uuid>,
-    pub room: Option<Uuid>,
+    pub room: Option<String>,
     pub addr: Addr<ChatServer>,
 }
 
@@ -19,6 +28,25 @@ impl WsChatSession {
             id: None,
             room: None,
             addr: addr,
+        }
+    }
+
+    pub fn execute(&self, cmd: Command, ctx: &mut WebsocketContext<Self>) {
+        match cmd {
+            Command::Join(name) => {
+                self.addr.do_send(JoinRoom {
+                    session: self.id.unwrap().clone(),
+                    room: name,
+                });
+                ctx.text("Joined!");
+            }
+            Command::Msg(msg) => {
+                self.addr.do_send(ClientMessage {
+                    session: self.id.clone().unwrap(),
+                    room: self.room.clone().unwrap(),
+                    msg: msg,
+                });
+            }
         }
     }
 }
@@ -63,6 +91,24 @@ impl Handler<Message> for WsChatSession {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        //TODO: Implement receiving message
+        let msg = match item {
+            Ok(msg) => msg,
+            _ => {
+                ctx.stop();
+                return;
+            }
+        };
+
+        match msg {
+            ws::Message::Text(msg) => match Command::from_str(&msg) {
+                Ok(cmd) => self.execute(cmd, ctx),
+                Err(err) => ctx.text(err.to_string()),
+            },
+            ws::Message::Close(reason) => {
+                ctx.close(reason);
+                ctx.stop();
+            }
+            _ => (),
+        }
     }
 }

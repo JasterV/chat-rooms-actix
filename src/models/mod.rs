@@ -3,9 +3,6 @@ use uuid::Uuid;
 
 use crate::actors::chat_server::ChatServer;
 
-pub mod messages;
-pub mod commands;
-
 pub type SessionId = Uuid;
 pub type RoomId = Uuid;
 
