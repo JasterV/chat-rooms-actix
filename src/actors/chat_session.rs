@@ -4,9 +4,10 @@ use crate::{
     actors::chat_server::ChatServer,
     commands::Command,
     messages::{
-        chat_server::{ClientMessage, Connect, Disconnect, JoinRoom},
+        chat_server::{ClientMessage, Connect, Disconnect},
         chat_session::Message,
     },
+    models::{RoomId, SessionId},
 };
 use actix::{
     fut, ActorContext, ActorFuture, ContextFutureSpawner, Handler, Running, StreamHandler,
@@ -14,11 +15,10 @@ use actix::{
 };
 use actix::{Actor, Addr, AsyncContext};
 use actix_web_actors::ws::{self, WebsocketContext};
-use uuid::Uuid;
 
 pub struct WsChatSession {
-    pub id: Option<Uuid>,
-    pub room: Option<String>,
+    pub id: Option<SessionId>,
+    pub room: Option<RoomId>,
     pub addr: Addr<ChatServer>,
 }
 
@@ -31,15 +31,8 @@ impl WsChatSession {
         }
     }
 
-    pub fn execute(&self, cmd: Command, ctx: &mut WebsocketContext<Self>) {
+    pub fn execute(&self, cmd: Command, _ctx: &mut WebsocketContext<Self>) {
         match cmd {
-            Command::Join(name) => {
-                self.addr.do_send(JoinRoom {
-                    session: self.id.unwrap().clone(),
-                    room: name,
-                });
-                ctx.text("Joined!");
-            }
             Command::Msg(msg) => {
                 self.addr.do_send(ClientMessage {
                     session: self.id.clone().unwrap(),
@@ -100,6 +93,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
         };
 
         match msg {
+            // TODO: Deserialize string to json first, then check action type
             ws::Message::Text(msg) => match Command::from_str(&msg) {
                 Ok(cmd) => self.execute(cmd, ctx),
                 Err(err) => ctx.text(err.to_string()),

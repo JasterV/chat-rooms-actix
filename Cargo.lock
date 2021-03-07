@@ -125,6 +125,7 @@ dependencies = [
  "actix-web",
  "actix-web-actors",
  "derive_more",
+ "serde_json",
  "uuid",
 ]
 

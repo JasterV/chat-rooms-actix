@@ -1,3 +1,4 @@
+pub mod ws_messages;
 use actix::Addr;
 use uuid::Uuid;
 

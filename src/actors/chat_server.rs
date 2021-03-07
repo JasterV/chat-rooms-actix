@@ -3,14 +3,14 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use crate::messages::{
-    chat_server::{ClientMessage, Connect, Disconnect, JoinRoom},
+    chat_server::{ClientMessage, Connect, CreateRoom, Disconnect, JoinRoom},
     chat_session::Message,
 };
-use crate::models::SessionId;
+use crate::models::{RoomId, SessionId};
 
 pub struct ChatServer {
     sessions: HashMap<SessionId, Recipient<Message>>,
-    rooms: HashMap<String, HashSet<SessionId>>,
+    rooms: HashMap<RoomId, HashSet<SessionId>>,
 }
 
 impl ChatServer {
@@ -21,7 +21,7 @@ impl ChatServer {
         }
     }
 
-    pub fn send_message(&self, room: &str, message: &str, skip_id: &Uuid) {
+    pub fn send_message(&self, room: &Uuid, message: &str, skip_id: &Uuid) {
         self.rooms.get(room).map(|sessions| {
             sessions.iter().for_each(|id| {
                 if id != skip_id {
@@ -68,7 +68,22 @@ impl Handler<ClientMessage> for ChatServer {
 
     fn handle(&mut self, msg: ClientMessage, _ctx: &mut Self::Context) -> Self::Result {
         let ClientMessage { session, room, msg } = msg;
+
         self.send_message(&room, &msg, &session);
+    }
+}
+
+impl Handler<CreateRoom> for ChatServer {
+    type Result = MessageResult<CreateRoom>;
+
+    fn handle(&mut self, msg: CreateRoom, _ctx: &mut Self::Context) -> Self::Result {
+        let CreateRoom { session } = msg;
+        let room_id = RoomId::new_v4();
+        self.rooms.insert(
+            room_id,
+            vec![session].into_iter().collect::<HashSet<Uuid>>(),
+        );
+        MessageResult(room_id)
     }
 }
 
@@ -93,10 +108,8 @@ impl Handler<JoinRoom> for ChatServer {
         }
 
         self.rooms
-            .entry(room.clone())
-            .or_insert_with(HashSet::new)
-            .insert(session);
-
-        self.send_message(&room, "Someone connected", &session);
+            .get_mut(&room)
+            .map(|sessions| sessions.insert(session))
+            .map(|_| self.send_message(&room, "Someone connected", &session));
     }
 }

@@ -9,21 +9,14 @@ pub struct CommandError {
 }
 
 pub enum Command {
-    Join(String),
     Msg(String),
 }
 
+// TODO: IMPLEMENT MORE COMMANDS
 impl FromStr for Command {
     type Err = CommandError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let words: Vec<&str> = s.trim().split_whitespace().into_iter().collect();
-        let first = words.first().map(|&v| v).unwrap_or("");
-        if first == "/join" {
-            let name = words.last().map(|&v| v).unwrap_or("");
-            Ok(Command::Join(name.into()))
-        } else {
-            Ok(Command::Msg(s.into()))
-        }
+        Ok(Command::Msg(s.into()))
     }
 }
