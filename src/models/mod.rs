@@ -1,8 +1,8 @@
-pub mod ws_messages;
+pub mod commands;
+pub mod ws;
+use crate::actors::chat_server::ChatServer;
 use actix::Addr;
 use uuid::Uuid;
-
-use crate::actors::chat_server::ChatServer;
 
 pub type SessionId = Uuid;
 pub type RoomId = Uuid;
@@ -10,4 +10,3 @@ pub type RoomId = Uuid;
 pub struct AppState {
     pub chat: Addr<ChatServer>,
 }
-

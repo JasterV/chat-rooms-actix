@@ -1,7 +1,6 @@
+use crate::{actors::chat_session::WsChatSession, models::AppState};
 use actix_web::{web, HttpRequest, Responder};
 use actix_web_actors::ws;
-
-use crate::{actors::chat_session::WsChatSession, models::AppState};
 
 pub async fn connect(
     req: HttpRequest,
