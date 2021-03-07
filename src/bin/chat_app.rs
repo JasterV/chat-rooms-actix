@@ -1,12 +1,10 @@
 use actix_web::{App, HttpServer};
-use lib::server::{app_data, routes};
+use lib::server::init;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        return App::new().configure(app_data).configure(routes);
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
+    HttpServer::new(|| App::new().configure(init))
+        .bind("127.0.0.1:8080")?
+        .run()
+        .await
 }
