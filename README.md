@@ -16,5 +16,4 @@ cargo run
 
 ## Todo List
 
-+ HeartBeat on ws session actor to check clients state
 + Add a redis db to store messages & active rooms
