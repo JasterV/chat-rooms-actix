@@ -1,13 +1,13 @@
 mod actors;
+mod constants;
 mod messages;
 mod models;
 mod routes;
-mod server;
-mod constants;
 
-use crate::{actors::chat_server::ChatServer, models::AppState, server::init};
+use crate::{actors::chat_server::ChatServer, models::AppState};
 use actix::Actor;
 use actix_web::{App, HttpServer};
+use routes::ws::connect;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -15,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(AppState { chat: chat.clone() })
-            .configure(init)
+            .service(connect)
     })
     .bind("127.0.0.1:8080")?
     .run()
