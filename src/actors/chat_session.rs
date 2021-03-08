@@ -1,18 +1,22 @@
-use crate::messages::{
-    chat_server::{ClientMessage, Connect, CreateRoom, Disconnect, JoinRoom, Leave},
-    chat_session::Message,
-};
 use crate::{
     actors::chat_server::ChatServer,
+    constants::CLIENT_TIMEOUT,
     models::{
         commands::Command,
         ws::{MessageType, WsMessage},
         RoomId, SessionId,
     },
 };
+use crate::{
+    constants::HEARTBEAT_INTERVAL,
+    messages::{
+        chat_server::{ClientMessage, Connect, CreateRoom, Disconnect, JoinRoom, Leave},
+        chat_session::Message,
+    },
+};
 use actix::{
-    fut, ActorContext, ActorFuture, ContextFutureSpawner, Handler, Running, StreamHandler,
-    WrapFuture,
+    clock::Instant, fut, ActorContext, ActorFuture, ContextFutureSpawner, Handler, Running,
+    StreamHandler, WrapFuture,
 };
 use actix::{Actor, Addr, AsyncContext};
 use actix_web_actors::ws::{self, WebsocketContext};
@@ -23,6 +27,7 @@ pub struct WsChatSession {
     pub id: SessionId,
     pub room: Option<RoomId>,
     pub addr: Addr<ChatServer>,
+    pub hb: Instant,
 }
 
 impl WsChatSession {
@@ -30,8 +35,25 @@ impl WsChatSession {
         WsChatSession {
             id: Uuid::new_v4(),
             room: None,
+            hb: Instant::now(),
             addr,
         }
+    }
+
+    fn hb(&self, ctx: &mut WebsocketContext<Self>) {
+        ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+            if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+                // heartbeat timed out
+                println!("Websocket Client heartbeat failed, disconnecting!");
+                // notify chat server
+                act.addr.do_send(Disconnect { session: act.id });
+                // stop actor
+                ctx.stop();
+                // don't try to send a ping
+                return;
+            }
+            ctx.ping(b"");
+        });
     }
 
     pub fn handle_msg(&self, msg: WsMessage, ctx: &mut WebsocketContext<Self>) {
@@ -157,6 +179,7 @@ impl Actor for WsChatSession {
     type Context = WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        self.hb(ctx);
         let addr = ctx.address();
         self.addr
             .send(Connect {
@@ -207,6 +230,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 Ok(content) => self.handle_msg(content, ctx),
                 Err(err) => ctx.text(WsMessage::err(err.to_string())),
             },
+            ws::Message::Ping(msg) => {
+                self.hb = Instant::now();
+                ctx.pong(&msg);
+            }
+            ws::Message::Pong(_) => {
+                self.hb = Instant::now();
+            }
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
