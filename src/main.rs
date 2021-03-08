@@ -3,6 +3,7 @@ mod messages;
 mod models;
 mod routes;
 mod server;
+mod constants;
 
 use crate::{actors::chat_server::ChatServer, models::AppState, server::init};
 use actix::Actor;
