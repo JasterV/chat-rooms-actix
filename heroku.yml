@@ -1,5 +1,7 @@
 build:
   docker:
-    web: Dockerfile
+    web:
+       dockerfile: Dockerfile
+       target: production
 run:
   web: ./actix-messaging

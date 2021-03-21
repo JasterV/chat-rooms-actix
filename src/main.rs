@@ -6,13 +6,8 @@ mod routes;
 
 use crate::{actors::chat_server::ChatServer, models::AppState};
 use actix::Actor;
-use actix_web::{App, HttpServer, get};
+use actix_web::{App, HttpServer};
 use routes::connect;
-
-#[get("/hi")]
-async fn hi() -> &'static str {
-    "Hello, World!"
-}
 
 fn get_server_addr() -> String {
     let port = std::env::var("PORT").expect("PORT env variable not found");
@@ -27,7 +22,6 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(AppState { chat: chat.clone() })
             .service(connect)
-            .service(hi)
     })
     .bind(&addr)?
     .run()
