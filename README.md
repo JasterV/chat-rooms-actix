@@ -103,3 +103,4 @@ If an error occurs, the server will send back a json with the following format:
 ## Todo List
 
 + Add a redis db to store messages & active rooms
++ Add TLS certificate

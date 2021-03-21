@@ -7,6 +7,7 @@ use std::str::FromStr;
 #[rtype(result = "()")]
 pub enum Command {
     Msg(String),
+    GetRoomId,
 }
 
 #[derive(Debug, Display, Error)]
@@ -19,7 +20,16 @@ pub struct CommandError {
 impl FromStr for Command {
     type Err = CommandError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Command::Msg(s.into()))
+    fn from_str(data: &str) -> Result<Self, Self::Err> {
+        let words: Vec<&str> = data.trim().split_whitespace().collect();
+        let first_word = words.first();
+
+        if let Some(&word) = first_word {
+            return match word {
+                "/roomId" => Ok(Command::GetRoomId),
+                _ => Ok(Command::Msg(data.into())),
+            };
+        }
+        Ok(Command::Msg(data.into()))
     }
 }

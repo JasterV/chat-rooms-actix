@@ -200,8 +200,7 @@ impl WsChatSession {
 
     fn msg(&self, msg: String, ctx: &mut WebsocketContext<Self>) {
         match Command::from_str(&msg) {
-            Ok(cmd) if self.room.is_some() => ctx.notify(cmd),
-            Ok(_) => ctx.text(WsMessage::err("You are not in a room yet".into())),
+            Ok(cmd) => ctx.notify(cmd),
             Err(err) => ctx.text(WsMessage::err(err.to_string())),
         }
     }
@@ -233,14 +232,22 @@ impl WsChatSession {
 impl Handler<Command> for WsChatSession {
     type Result = ();
 
-    fn handle(&mut self, msg: Command, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Command, ctx: &mut Self::Context) -> Self::Result {
+        if let None = self.room {
+            ctx.text(WsMessage::err("You are not in a room".into()));
+            return;
+        }
+        let room_id = self.room.clone().unwrap();
         match msg {
             Command::Msg(msg) => {
                 self.addr.do_send(ClientMessage {
                     session: self.id.clone(),
-                    room: self.room.clone().unwrap(),
+                    room: room_id,
                     msg,
                 });
+            }
+            Command::GetRoomId => {
+                ctx.text(WsMessage::info(room_id.to_string()));
             }
         }
     }
