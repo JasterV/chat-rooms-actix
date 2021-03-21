@@ -1,26 +1,27 @@
 use actix::Message as ActixMessage;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use std::convert::Into;
 
 #[derive(Serialize, Deserialize, ActixMessage)]
 #[rtype(result = "()")]
 pub struct WsMessage {
     pub ty: MessageType,
-    pub data: Option<String>,
+    pub data: Value,
 }
 
 impl WsMessage {
     pub fn err(msg: String) -> Self {
         WsMessage {
             ty: MessageType::Err,
-            data: Some(msg),
+            data: json!(msg),
         }
     }
 
     pub fn info(msg: String) -> Self {
         WsMessage {
             ty: MessageType::Info,
-            data: Some(msg),
+            data: json!(msg),
         }
     }
 }

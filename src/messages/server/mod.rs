@@ -7,6 +7,7 @@ use uuid::Uuid;
 #[rtype(result = "()")]
 pub struct ClientMessage {
     pub session: SessionId,
+    pub user: String,
     pub room: RoomId,
     pub msg: String,
 }

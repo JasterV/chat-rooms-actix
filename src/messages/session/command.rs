@@ -8,6 +8,7 @@ use std::str::FromStr;
 pub enum Command {
     Msg(String),
     GetRoomId,
+    SetName(String),
 }
 
 #[derive(Debug, Display, Error)]
@@ -22,11 +23,15 @@ impl FromStr for Command {
 
     fn from_str(data: &str) -> Result<Self, Self::Err> {
         let words: Vec<&str> = data.trim().split_whitespace().collect();
-        let first_word = words.first();
+        let opt = words.split_first();
 
-        if let Some(&word) = first_word {
-            return match word {
+        if let Some((&command, words)) = opt {
+            return match command {
                 "/roomId" => Ok(Command::GetRoomId),
+                "/setName" if words.len() > 0 => Ok(Command::SetName(words[0].into())),
+                "/setName" => Err(CommandError {
+                    msg: "Invalid empty name",
+                }),
                 _ => Ok(Command::Msg(data.into())),
             };
         }

@@ -1,7 +1,7 @@
 use crate::{
     actors::chat_server::ChatServer,
     constants::CLIENT_TIMEOUT,
-    models::{RoomId, SessionId},
+    models::{RoomId, SessionId, UserInfo},
 };
 use crate::{
     constants::HEARTBEAT_INTERVAL,
@@ -20,6 +20,7 @@ use actix::{
 };
 use actix::{Actor, Addr, AsyncContext};
 use actix_web_actors::ws::{self, WebsocketContext};
+use serde_json::json;
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -28,6 +29,7 @@ pub struct WsChatSession {
     pub room: Option<RoomId>,
     pub addr: Addr<ChatServer>,
     pub hb: Instant,
+    pub user: UserInfo,
 }
 
 impl WsChatSession {
@@ -36,6 +38,7 @@ impl WsChatSession {
             id: Uuid::new_v4(),
             room: None,
             hb: Instant::now(),
+            user: UserInfo::default(),
             addr,
         }
     }
@@ -92,7 +95,10 @@ impl Handler<Message> for WsChatSession {
     type Result = ();
 
     fn handle(&mut self, msg: Message, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.0);
+        ctx.text(WsMessage {
+            ty: MessageType::Msg,
+            data: json!(msg),
+        });
     }
 }
 
@@ -132,14 +138,14 @@ impl Handler<WsMessage> for WsChatSession {
     type Result = ();
 
     fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) -> Self::Result {
-        let data = msg.data.unwrap_or("".into());
+        let data = msg.data.as_str().unwrap();
         match msg.ty {
             MessageType::Create => self.create(ctx),
             MessageType::Join => match Uuid::from_str(&data) {
                 Ok(uuid) => self.join(uuid, ctx),
                 Err(err) => ctx.text(WsMessage::err(err.to_string())),
             },
-            MessageType::Msg => self.msg(data, ctx),
+            MessageType::Msg => self.msg(data.into(), ctx),
             MessageType::Leave => self.leave(ctx),
             _ => (),
         }
@@ -184,7 +190,7 @@ impl WsChatSession {
                         act.room = Some(room_id.clone());
                         ctx.text(WsMessage {
                             ty: MessageType::Msg,
-                            data: Some("Joined!".into()),
+                            data: json!("Joined!"),
                         })
                     }
                     Ok(res) => ctx.text(WsMessage::err(res.unwrap_err().to_string())),
@@ -242,10 +248,12 @@ impl Handler<Command> for WsChatSession {
             Command::Msg(msg) => {
                 self.addr.do_send(ClientMessage {
                     session: self.id.clone(),
+                    user: self.user.nickname.clone(),
                     room: room_id,
                     msg,
                 });
             }
+            Command::SetName(name) => self.user.nickname = name,
             Command::GetRoomId => {
                 ctx.text(WsMessage::info(room_id.to_string()));
             }

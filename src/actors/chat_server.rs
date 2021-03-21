@@ -27,13 +27,16 @@ impl ChatServer {
             .unwrap_or(false)
     }
 
-    pub fn send_message(&self, room: &Uuid, message: &str, skip_id: &Uuid) {
+    pub fn send_message(&self, room: &Uuid, message: &str, skip_id: &Uuid, user: Option<String>) {
         self.rooms.get(room).map(|sessions| {
             sessions.iter().for_each(|id| {
                 if id != skip_id {
-                    self.sessions
-                        .get(id)
-                        .map(|addr| addr.do_send(Message(message.into())));
+                    self.sessions.get(id).map(|addr| {
+                        addr.do_send(Message {
+                            nickname: user.clone(),
+                            msg: message.into(),
+                        })
+                    });
                 }
             });
         });
@@ -49,7 +52,7 @@ impl ChatServer {
         }
         // send message to other users
         for room in rooms {
-            self.send_message(&room, "Someone disconnected", &session_id);
+            self.send_message(&room, "Someone disconnected", &session_id, None);
             if self.is_empty(&room) {
                 self.rooms.remove(&room);
             }
@@ -95,8 +98,13 @@ impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _ctx: &mut Self::Context) -> Self::Result {
-        let ClientMessage { session, room, msg } = msg;
-        self.send_message(&room, &msg, &session);
+        let ClientMessage {
+            session,
+            user,
+            room,
+            msg,
+        } = msg;
+        self.send_message(&room, &msg, &session, Some(user));
     }
 }
 
@@ -129,7 +137,7 @@ impl Handler<JoinRoom> for ChatServer {
             .rooms
             .get_mut(&room)
             .map(|sessions| sessions.insert(session))
-            .map(|_| self.send_message(&room, "Someone connected", &session))
+            .map(|_| self.send_message(&room, "Someone connected", &session, None))
             .ok_or("The room doesn't exists".into());
 
         MessageResult(result)
