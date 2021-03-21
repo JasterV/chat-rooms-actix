@@ -16,7 +16,7 @@ async fn hi() -> &'static str {
 
 fn get_server_addr() -> String {
     let port = std::env::var("PORT").expect("PORT env variable not found");
-    format!("127.0.0.1:{}", port)
+    format!("0.0.0.0:{}", port)
 }
 
 #[actix_web::main]
