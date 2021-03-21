@@ -1,6 +1,6 @@
 use crate::messages::{
-    chat_server::{ClientMessage, Connect, CreateRoom, Disconnect, JoinRoom, Leave},
-    chat_session::Message,
+    server::{ClientMessage, Connect, CreateRoom, Disconnect, JoinRoom, Leave},
+    session::Message,
 };
 use crate::models::{RoomId, SessionId};
 use actix::{Actor, Context, Handler, MessageResult, Recipient};
@@ -63,7 +63,7 @@ impl Actor for ChatServer {
 
 impl Handler<Connect> for ChatServer {
     type Result = ();
-    
+
     fn handle(&mut self, msg: Connect, _ctx: &mut Self::Context) -> Self::Result {
         let Connect { id, addr } = msg;
         self.sessions.insert(id, addr);

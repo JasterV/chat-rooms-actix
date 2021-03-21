@@ -7,7 +7,7 @@ mod routes;
 use crate::{actors::chat_server::ChatServer, models::AppState};
 use actix::Actor;
 use actix_web::{App, HttpServer};
-use routes::ws::connect;
+use routes::connect;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

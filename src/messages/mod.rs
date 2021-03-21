@@ -1,2 +1,2 @@
-pub mod chat_server;
-pub mod chat_session;
+pub mod server;
+pub mod session;

@@ -1,6 +1,9 @@
+use actix::Message as ActixMessage;
 use serde::{Deserialize, Serialize};
+use std::convert::Into;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ActixMessage)]
+#[rtype(result = "()")]
 pub struct WsMessage {
     pub ty: MessageType,
     pub data: Option<String>,
@@ -13,6 +16,13 @@ impl WsMessage {
             data: Some(msg),
         }
     }
+
+    pub fn info(msg: String) -> Self {
+        WsMessage {
+            ty: MessageType::Info,
+            data: Some(msg),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,6 +32,7 @@ pub enum MessageType {
     Leave,
     Msg,
     Err,
+    Info,
 }
 
 impl Into<String> for WsMessage {

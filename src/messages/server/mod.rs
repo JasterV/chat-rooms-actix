@@ -1,4 +1,4 @@
-use super::chat_session::Message;
+use super::session::Message;
 use crate::models::{RoomId, SessionId};
 use actix::{Message as ActixMessage, Recipient};
 use uuid::Uuid;

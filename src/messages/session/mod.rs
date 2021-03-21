@@ -1,3 +1,5 @@
+pub mod command;
+pub mod wsmessage;
 use actix::Message as ActixMessage;
 
 #[derive(ActixMessage)]

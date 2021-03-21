@@ -1,5 +1,3 @@
-pub mod commands;
-pub mod ws;
 use crate::actors::chat_server::ChatServer;
 use actix::Addr;
 use uuid::Uuid;
