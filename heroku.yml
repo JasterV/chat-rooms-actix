@@ -1,3 +1,5 @@
 build:
   docker:
     app: Dockerfile
+run:
+  app: ./actix-messaging
