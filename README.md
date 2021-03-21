@@ -28,8 +28,8 @@ To execute any operation you have to send a json which has the following format:
 
 ```json
 {
-    "ty": "Create" | "Join" | "Leave" | "Msg",
-    "data": ""
+    "ty": "<type>",
+    "data": "<message>"
 }
 ```
 
@@ -46,7 +46,7 @@ To execute any operation you have to send a json which has the following format:
         ```json
         {
             "ty": "Info",
-            "data": <room-id>
+            "data": "<room-id>"
         }
         ```
 
@@ -54,7 +54,7 @@ To execute any operation you have to send a json which has the following format:
     ```json
     {
         "ty": "Join",
-        "data": <room-id>
+        "data": "<room-id>"
     }
     ```
     + Response:
@@ -96,7 +96,7 @@ If an error occurs, the server will send back a json with the following format:
 ```json
 {
     "ty": "Err",
-    "data" <error-message>
+    "data": "<error-message>"
 }
 ```
 
