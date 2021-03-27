@@ -119,7 +119,6 @@ impl Handler<CreateRoom> for ChatServer {
             room_id,
             vec![session].into_iter().collect::<HashSet<Uuid>>(),
         );
-        println!("{:?}", self.rooms);
         MessageResult(room_id)
     }
 }
