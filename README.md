@@ -20,7 +20,9 @@ cargo run
 
 First, you will need to connect to the app by web socket:
 
-Ex: ```ws://localhost:<$PORT>```
+Ex: ```wss://rusty-messaging.herokuapp.com/```
+
+> Please, connect over wss whenever you can since it is enabled on the server
 
 ### Send messages
 
@@ -103,4 +105,3 @@ If an error occurs, the server will send back a json with the following format:
 ## Todo List
 
 + Add a redis db to store messages & active rooms
-+ Add TLS certificate
