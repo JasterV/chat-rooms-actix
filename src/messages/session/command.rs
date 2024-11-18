@@ -12,7 +12,7 @@ pub enum Command {
 }
 
 #[derive(Debug, Display, Error)]
-#[display(fmt = "Invalid command: {}", msg)]
+#[display("Invalid command: {}", msg)]
 pub struct CommandError {
     msg: &'static str,
 }

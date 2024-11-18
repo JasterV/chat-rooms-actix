@@ -14,6 +14,13 @@ cargo build
 cargo run
 ```
 
+## Test with docker
+
+```sh
+docker build ./ -t actix-chat
+docker run --rm -p 8080:8080 actix-chat
+```
+
 ## How to interact with the app
 
 ### Connect
